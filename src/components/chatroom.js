@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { Link } from "react-router-dom";
 import { connect } from "react-redux";
 import { getRoomData, getChatLog, sendNewMessage } from "../actions";
 import { db } from "../firebase";
@@ -16,8 +17,12 @@ class ChatRoom extends Component {
 		this.props.getRoomData(roomId, logId);
 
 		db.ref(`/chat-logs/${logId}`).on("value", snapshot => {
-			this.props.getChatLog(snapshot.val())
-		})
+			this.props.getChatLog(snapshot.val());
+		});
+	}
+
+	componentWillUnMount() {
+		db.ref(`/chat-logs/${this.props.match.params.logId}`).off();
 	}
 
 	sendMessage(event) {
@@ -33,16 +38,21 @@ class ChatRoom extends Component {
 		const { name } = this.props.roomInfo;
 		const { chatLog } = this.props;
 
-		const messages = Object.keys(chatLog).reverse().map(key => {
-			return (
-				<li key={key} className="collection-item">
-					{chatLog[key]}
-				</li>
-			);
-		});
+		const messages = Object.keys(chatLog)
+			.reverse()
+			.map(key => {
+				return (
+					<li key={key} className="collection-item">
+						{chatLog[key]}
+					</li>
+				);
+			});
 
 		return (
 			<div>
+				<Link to="/" className="btn red darken-2">
+					Go Back To Lobby
+				</Link>
 				<h3>{name ? name : "Loading..."}</h3>
 				<form onSubmit={this.sendMessage.bind(this)}>
 					<label>Enter Message:</label>
