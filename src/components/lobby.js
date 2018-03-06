@@ -1,5 +1,9 @@
 import React, { Component } from "react";
+import { connect } from "react-redux";
+import { Link } from "react-router-dom";
+
 import { db } from "../firebase";
+import { getRoomList, createRoom } from "../actions";
 
 class Lobby extends Component {
 	constructor(props) {
@@ -8,26 +12,51 @@ class Lobby extends Component {
 		this.state = {
 			roomName: ""
 		};
+
+		this.dbChatRef = db.ref("/chat-rooms");
 	}
 	handleCreateRoom(event) {
-		const { roomName } = this.state;
 		event.preventDefault();
-		console.log("Room name: ", this.state.roomName);
-		const newRoom = {
-			name: roomName,
-			chatLog: [`Room: ${roomName} - Created`]
-		};
-		db
-			.ref("/chat-rooms")
-			.push(newRoom)
-			.then(resp => {
-				console.log("Add Room Response", resp);
-			});
+
+		this.props.createRoom(this.state.roomName);
+
+		this.setState({
+			roomName: ""
+		});
 	}
+	componentDidMount() {
+		this.dbChatRef.on("value", snapshot => {
+			this.props.getRoomList(snapshot.val());
+		});
+	}
+
+	componentWillUnmount() {
+		this.dbChatRef.off();
+	}
+
 	render() {
 		const { roomName } = this.state;
+		const { roomList } = this.props;
+		let rooms = [];
+
+		if (roomList) {
+			rooms = Object.keys(roomList).map((key, index) => {
+				return (
+					<li key={index} className="collection-item">
+						<Link to={`/room/${key}/log/${roomList[key].chatLogID}`}>{roomList[key].name}</Link>
+					</li>
+				);
+			});
+		} else {
+			rooms.push(
+				<li key="0" className="collection-item">
+					No rooms available. Create one above.
+				</li>
+			);
+		}
+
 		return (
-			<div>
+			<div className="row">
 				<h3>Chat Lobby</h3>
 				<form onSubmit={this.handleCreateRoom.bind(this)}>
 					<label> Chat Room Name</label>
@@ -36,11 +65,18 @@ class Lobby extends Component {
 						onChange={event => this.setState({ roomName: event.target.value })}
 						value={roomName}
 					/>
-					<button> Create Room</button>
+					<button className="btn-large">Create Room</button>
 				</form>
+				<ul className="collection">{rooms}</ul>
 			</div>
 		);
 	}
 }
 
-export default Lobby;
+function mapStateToProps(state) {
+	return {
+		roomList: state.chatReducer.roomList
+	};
+}
+
+export default connect(mapStateToProps, { getRoomList, createRoom })(Lobby);
