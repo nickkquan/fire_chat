@@ -14,16 +14,12 @@ class ChatRoom extends Component {
 	componentDidMount() {
 		const { roomId, logId } = this.props.match.params;
 		this.props.getRoomData(roomId, logId);
+
+		db.ref(`/chat-logs/${logId}`).on("value", snapshot => {
+			this.props.getChatLog(snapshot.val())
+		})
 	}
 
-	componentWillReceiveProps(nextProps) {
-		if (!this.props.roomInfo.chatLogID && nextProps.roomInfo.chatLogID) {
-			console.log("We now have chat log ID");
-			db.ref(`/chat-logs/${nextProps.roomInfo.chatLogID}`).on("value", snapshot => {
-				this.props.getChatLog(snapshot.val());
-			});
-		}
-	}
 	sendMessage(event) {
 		event.preventDefault();
 		this.props.sendNewMessage(this.props.roomInfo.chatLogID, this.state.message);
