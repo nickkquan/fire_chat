@@ -18,6 +18,10 @@ class Lobby extends Component {
 	handleCreateRoom(event) {
 		event.preventDefault();
 
+		if (!this.state.roomName) {
+			return;
+		}
+
 		this.props.createRoom(this.state.roomName);
 
 		this.setState({
